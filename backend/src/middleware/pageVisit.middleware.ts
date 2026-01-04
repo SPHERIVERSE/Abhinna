@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import prisma from "../config/prisma";
+import { prisma } from "../config/prisma";
 
 const IGNORED_PATHS = [
   "/admin",
@@ -25,8 +25,8 @@ export async function pageVisitMiddleware(
     await prisma.pageVisit.create({
       data: {
         path: req.path,
-        ip: req.ip,
-        userAgent: req.headers["user-agent"] || null
+        ipAddress: req.ip || req.socket.remoteAddress || "unknown",
+        userAgent: req.get("user-agent") || "unknown",
       }
     });
   } catch (err) {
