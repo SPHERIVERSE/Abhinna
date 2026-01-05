@@ -4,8 +4,9 @@ import { setAuthCookie } from "../utils/cookies";
 import { clearAuthCookie } from "../utils/cookies";
 import { requireAdmin } from "../middleware/auth.middleware";
 import { adminStatsController } from "../controllers/adminStats.controller";
-import { createAsset, getAssets } from "../controllers/assets.controller";
-import { createCourse, getCourses, toggleCourseStatus } from "../controllers/courses.controller";
+import { createAsset, getAssets, updateAsset, deleteAsset } from "../controllers/assets.controller";
+import { createCourse, getCourses, updateCourse, // 👈 Import these
+  deleteCourse, toggleCourseStatus } from "../controllers/courses.controller";
 import { createFaculty, getFaculty, deleteFaculty, updateFaculty } from "../controllers/faculty.controller";
 import { 
   createNotification, 
@@ -13,6 +14,7 @@ import {
   toggleNotification, 
   deleteNotification 
 } from "../controllers/notifications.controller";
+import { createBatch, getBatches, updateBatch, deleteBatch } from "../controllers/batches.controller";
 
 
 const router = Router();
@@ -42,8 +44,12 @@ router.post("/logout", (req, res) => {
 router.get("/stats", requireAdmin, adminStatsController);
 router.post("/assets", requireAdmin, createAsset);
 router.get("/assets", requireAdmin, getAssets);
+router.put("/assets/:id", requireAdmin, updateAsset); 
+router.delete("/assets/:id", requireAdmin, deleteAsset);
 router.post("/courses", requireAdmin, createCourse);
 router.get("/courses", requireAdmin, getCourses);
+router.put("/courses/:id", requireAdmin, updateCourse);  
+router.delete("/courses/:id", requireAdmin, deleteCourse);
 router.patch("/courses/:id/status", requireAdmin, toggleCourseStatus);
 router.post("/faculty", requireAdmin, createFaculty);
 router.get("/faculty", requireAdmin, getFaculty);
@@ -53,6 +59,10 @@ router.post("/notifications", requireAdmin, createNotification);
 router.get("/notifications", requireAdmin, getNotifications);
 router.patch("/notifications/:id", requireAdmin, toggleNotification);
 router.delete("/notifications/:id", requireAdmin, deleteNotification);
+router.post("/batches", requireAdmin, createBatch);
+router.get("/batches", requireAdmin, getBatches);
+router.put("/batches/:id", requireAdmin, updateBatch);
+router.delete("/batches/:id", requireAdmin, deleteBatch);
 
 export default router;
 
