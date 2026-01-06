@@ -4,25 +4,71 @@ import PopupModal from "@/components/ui/PopupModal";
 import CardCarousel from "@/components/ui/CardCarousel"; 
 import BottomNav from "@/components/layout/BottomNav";
 import { 
-  ArrowRight, BookOpen, Trophy, CheckCircle2, 
-  MessageCircle, Star, GraduationCap 
+  ArrowRight, BookOpen, Trophy, 
+  MessageCircle, Star, GraduationCap,
+  MapPin, Phone, Globe, Facebook, Instagram, Twitter, Send, ExternalLink 
 } from "lucide-react";
 
-// 👇 CONFIGURATION: ENTER YOUR WHATSAPP NUMBER HERE
-const WA_NUMBER = "919876543210"; 
-
-// A professional placeholder message that identifies the intent immediately
+// 👇 CONFIGURATION
+const WA_NUMBER = "919577828813"; 
 const WA_MESSAGE = "Hello Abhinna Institute, I am interested in your courses. Please guide me regarding admissions.";
-
-// The encoded link that includes the message
 const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MESSAGE)}`;
 
+// 👇 MAP CONFIGURATION
+const MAP_QUERY = "Abhinna Institute Uzanbazar Guwahati";
+const GOOGLE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`;
+const MAP_EMBED_URL = `https://maps.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+// 🟢 HELPER: URL CLEANER
+const cleanUrl = (url: string | undefined) => {
+  if (!url) return "";
+  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
+  if (url.includes("/uploads/")) {
+    return "/uploads/" + url.split("/uploads/")[1];
+  }
+  return url;
+};
+
+// 🟢 CUSTOM WHATSAPP ICON (Using your downloaded file)
+const WhatsAppIcon = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+  <img 
+    src="/whatsapp.svg" 
+    alt="WhatsApp" 
+    width={size} 
+    height={size} 
+    className={className} 
+    // Ensure the icon doesn't get squashed
+    style={{ minWidth: size, minHeight: size }}
+  />
+);
+
+// 🟢 SMART DATA FETCHER
 async function getHomeData() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/home`, { next: { revalidate: 60 } });
+    const baseUrl = typeof window === "undefined" 
+      ? "https://stick-gis-tier-reflection.trycloudflare.com" 
+      : process.env.NEXT_PUBLIC_API_URL;
+
+    const fetchUrl = typeof window === "undefined" 
+      ? `${baseUrl}/public/home` 
+      : `${baseUrl}/public/home`;
+
+    const res = await fetch(fetchUrl, { next: { revalidate: 60 } });
+    
     if (!res.ok) throw new Error("Failed");
-    return res.json();
+    const json = await res.json();
+
+    if (json.success && json.data) {
+       const d = json.data;
+       if(d.gallery) d.gallery = d.gallery.map((i: any) => ({...i, fileUrl: cleanUrl(i.fileUrl)}));
+       if(d.results) d.results = d.results.map((i: any) => ({...i, fileUrl: cleanUrl(i.fileUrl)}));
+       if(d.faculty) d.faculty = d.faculty.map((i: any) => ({...i, photo: { ...i.photo, fileUrl: cleanUrl(i.photo?.fileUrl) }}));
+       if(d.leadership) d.leadership = d.leadership.map((i: any) => ({...i, photo: { ...i.photo, fileUrl: cleanUrl(i.photo?.fileUrl) }}));
+    }
+    
+    return json;
   } catch (e) {
+    console.error("Home Data Fetch Error:", e);
     return { success: false, data: { courses: [], faculty: [], leadership: [], notifications: [], banners: [], gallery: [], results: [] } };
   }
 }
@@ -94,8 +140,13 @@ export default async function HomePage() {
             <Link href="#faculty" className="hover:text-[#D4AF37] transition duration-300 transform hover:scale-105">Faculty</Link>
           </div>
 
-          <a href={WA_LINK} target="_blank" className="hidden md:flex items-center gap-2 bg-[#25D366] text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-[#1fb855] transition-all shadow-md transform hover:scale-105">
-            <MessageCircle size={20} fill="white" /> 
+          {/* ✅ DESKTOP: Full Button with Text (Hidden on Mobile/Tablet) */}
+          <a 
+             href={WA_LINK} 
+             target="_blank" 
+             className="hidden lg:flex items-center gap-2 bg-[#25D366] text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-[#1fb855] transition-all shadow-md transform hover:scale-105"
+          >
+            <WhatsAppIcon size={18} /> 
             <span>Chat Now</span>
           </a>
         </div>
@@ -335,11 +386,121 @@ export default async function HomePage() {
          </div>
       </section>
 
-      <footer className="bg-slate-900 text-white pt-16 pb-8 border-t border-slate-800">
-         <div className="max-w-7xl mx-auto px-6 text-center text-gray-400 text-xs">
-            <p>© 2026 Abhinna Institute. <Link href="/login" className="hover:text-white">Admin Login</Link></p>
+      {/* 🔹 8. PROFESSIONAL FOOTER */}
+      <footer className="bg-slate-900 text-white pt-20 pb-10 border-t border-slate-800">
+         <div className="max-w-7xl mx-auto px-6">
+            <div className="grid md:grid-cols-3 gap-12 mb-16">
+               {/* Column 1: Brand & Desc */}
+               <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                     <div className="w-24 h-12 bg-white/10 rounded-lg p-1 flex items-center justify-center border border-white/10">
+                        <img src="/logo.jpg" alt="Logo" className="max-w-full max-h-full" />
+                     </div>
+                     <div>
+                        <h3 className="font-bold text-lg text-[#D4AF37]">ABHINNA INSTITUTE</h3>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">Est. 2016</p>
+                     </div>
+                  </div>
+                  <p className="text-gray-400 text-sm leading-relaxed pr-6">
+                     Abhinna is an initiative born out of passion for the student community of Guwahati. Our quest is to traverse the paragon of excellence and creativity locked in every student and to help those students who have positive attitude towards academia.
+                  </p>
+                  
+                  {/* Social Icons */}
+                  <div className="flex gap-3 flex-wrap">
+                     <a href="https://www.facebook.com/abhinna.assam/" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-gray-400 hover:bg-[#1877F2] hover:text-white transition-all hover:-translate-y-1">
+                        <Facebook size={16} />
+                     </a>
+                     <a href="#" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-gray-400 hover:bg-[#E4405F] hover:text-white transition-all hover:-translate-y-1">
+                        <Instagram size={16} />
+                     </a>
+                     <a href="#" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-gray-400 hover:bg-[#1DA1F2] hover:text-white transition-all hover:-translate-y-1">
+                        <Twitter size={16} />
+                     </a>
+                     <a href="#" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-gray-400 hover:bg-[#0088cc] hover:text-white transition-all hover:-translate-y-1">
+                        <Send size={16} />
+                     </a>
+                  </div>
+               </div>
+
+               {/* Column 2: Contact Info */}
+               <div>
+                  <h4 className="text-white font-bold mb-6 flex items-center gap-2">
+                     <span className="w-8 h-[2px] bg-[#D4AF37]"></span> Visit Us
+                  </h4>
+                  <ul className="space-y-5">
+                     <li className="flex items-start gap-4 text-gray-400">
+                        <MapPin className="text-[#D4AF37] mt-1 shrink-0" size={20} />
+                        <span className="text-sm leading-relaxed">
+                           "ABHINNA" – Uzanbazar,<br /> Naojan Path, Guwahati - 781001
+                        </span>
+                     </li>
+                     <li className="flex items-center gap-4 text-gray-400 group">
+                        <Phone className="text-[#D4AF37] shrink-0" size={20} />
+                        <div>
+                           {/* Click to Call */}
+                           <a href="tel:+919387866634" className="text-white font-medium group-hover:text-[#D4AF37] transition-colors block">
+                              +91 93878 66634
+                           </a>
+                           <span className="text-xs text-gray-500 block mt-0.5">10:00 AM – 7:00 PM (Office Hours)</span>
+                        </div>
+                     </li>
+                  </ul>
+               </div>
+
+               {/* Column 3: The Map */}
+               <div>
+                  <h4 className="text-white font-bold mb-6 flex items-center gap-2">
+                     <span className="w-8 h-[2px] bg-[#D4AF37]"></span> Locate Us
+                  </h4>
+                  {/* 🗺️ INTERACTIVE MAP LINK */}
+                  <a 
+                    href={GOOGLE_MAPS_LINK} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block relative w-full h-48 rounded-xl overflow-hidden border border-slate-700 shadow-2xl group hover:border-[#D4AF37] transition-colors"
+                  >
+                     {/* The Embed (COLORED) */}
+                     <iframe 
+                        src={MAP_EMBED_URL}
+                        width="100%" 
+                        height="100%" 
+                        // Removed 'filter grayscale opacity-80' to make it fully colored and bright
+                        className="w-full h-full border-0 pointer-events-none"
+                        loading="lazy"
+                     />
+                     
+                     {/* Overlay Effect */}
+                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors flex items-center justify-center pointer-events-none">
+                        <div className="bg-white/90 text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all flex items-center gap-2">
+                            <ExternalLink size={14} /> View on Google Maps
+                        </div>
+                     </div>
+                  </a>
+               </div>
+            </div>
+
+            {/* Bottom Bar - ADMIN LOGIN REMOVED */}
+            <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+               <p>© 2026 Abhinna Institute. All rights reserved.</p>
+               <div className="flex gap-6">
+                  <Link href="#" className="hover:text-white transition">Privacy Policy</Link>
+                  <Link href="#" className="hover:text-white transition">Terms of Service</Link>
+                  {/* Secret Admin Link Hidden */}
+               </div>
+            </div>
          </div>
       </footer>
+
+      {/* 🔹 MOBILE/TABLET FLOATING WHATSAPP BUTTON */}
+      {/* Fixed position above bottom nav, hidden on Desktop (lg) */}
+      <a
+        href={WA_LINK}
+        target="_blank"
+        className="lg:hidden fixed bottom-24 right-8 z-50 bg-[#D4AF37] text-white rounded-full shadow-2xl animate-bounce"
+        aria-label="Chat on WhatsApp"
+      >
+        <WhatsAppIcon size={60} />
+      </a>
 
       {/* 🔹 MOBILE BOTTOM NAVIGATION */}
       <BottomNav />
