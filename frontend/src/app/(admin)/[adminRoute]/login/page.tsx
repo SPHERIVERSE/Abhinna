@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       // 2. Success! The backend set the 'session' cookie automatically.
       // We just need to refresh so Middleware sees it.
       router.refresh();
-      router.push("dashboard");
+      router.replace(`/${process.env.NEXT_PUBLIC_ADMIN_ROUTE}/dashboard`);
     } catch (err: any) {
       setError(err.message);
     } finally {

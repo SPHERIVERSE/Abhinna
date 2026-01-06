@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { X, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 
 // 👇 CONFIGURATION
 const WA_NUMBER = "919876543210"; 
-const WA_MESSAGE = "Hello, I saw the notice on your website and would like to know more.";
+const WA_MESSAGE = "Hello, I saw the poster on your website and would like to know more.";
 const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MESSAGE)}`;
 
 type PopupModalProps = {
@@ -13,51 +13,103 @@ type PopupModalProps = {
 };
 
 export default function PopupModal({ notifications }: PopupModalProps) {
-  const [popup, setPopup] = useState<{ id: string; message: string; link?: string } | null>(null);
+  const [popups, setPopups] = useState<any[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const autoSlideTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // 1. FILTER & SORT POSTERS
   useEffect(() => {
-    const activePopup = notifications.find((n: any) => n.type === "POPUP");
-    
-    if (activePopup) {
-      const hasSeen = sessionStorage.getItem(`seen_popup_${activePopup.id}`);
-      if (!hasSeen) {
-        setPopup(activePopup);
-        // 5 Second Delay
-        const timer = setTimeout(() => setIsVisible(true), 5000);
+    const activePopups = notifications.filter((n: any) => {
+      // Allow explicit POSTERS
+      if (n.type === "POSTER") return true;
+      // Allow POPUPS with valid Images
+      if (n.type === "POPUP" && n.link) {
+         return n.link.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)$/i) || 
+                n.link.includes("/uploads/") ||
+                n.link.includes("images") ||
+                n.link.includes("cloudinary");
+      }
+      return false;
+    });
+
+    if (activePopups.length > 0) {
+      // Check if the LATEST (first) poster has been seen
+      const latestPopup = activePopups[0];
+      const hasSeenLatest = sessionStorage.getItem(`seen_popup_${latestPopup.id}`);
+      
+      if (!hasSeenLatest) {
+        setPopups(activePopups);
+        setCurrentIndex(0);
+        
+        // Slight delay for smooth entrance
+        const timer = setTimeout(() => setIsVisible(true), 2000);
         return () => clearTimeout(timer);
       }
     }
   }, [notifications]);
 
+  // 2. AUTO-ROTATION LOGIC (5 Seconds)
+  useEffect(() => {
+    if (!isVisible || popups.length <= 1) return;
+
+    const startTimer = () => {
+      // Clear existing to avoid double timers
+      if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
+      
+      autoSlideTimer.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % popups.length);
+      }, 5000); // 5 Seconds Rotation
+    };
+
+    startTimer();
+
+    // Cleanup on unmount or close
+    return () => {
+      if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
+    };
+  }, [isVisible, popups.length]);
+
+  // 3. HANDLERS
   const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the link if clicked near the edge
+    e.stopPropagation();
     e.preventDefault();
     setIsVisible(false);
-    if (popup) {
-      sessionStorage.setItem(`seen_popup_${popup.id}`, "true");
+    // Stop rotation immediately
+    if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
+
+    // Mark seen
+    if (popups.length > 0) {
+      sessionStorage.setItem(`seen_popup_${popups[0].id}`, "true");
     }
   };
 
-  if (!popup) return null;
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    // Reset timer on manual interaction so it doesn't jump immediately after click
+    if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
+    setCurrentIndex((prev) => (prev + 1) % popups.length);
+  };
 
-  // Image Detection
-  const isImagePoster = popup.link && (
-    popup.link.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)$/i) || 
-    popup.link.includes("cloudinary") || 
-    popup.link.includes("images")
-  );
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (autoSlideTimer.current) clearInterval(autoSlideTimer.current);
+    setCurrentIndex((prev) => (prev - 1 + popups.length) % popups.length);
+  };
+
+  if (popups.length === 0) return null;
 
   return (
     <div 
       className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
       <div 
-        className={`relative w-full ${isImagePoster ? 'max-w-lg' : 'max-w-md'} transform transition-all duration-500 ${isVisible ? 'scale-100 translate-y-0' : 'scale-90 translate-y-8'}`}
+        className={`relative w-full max-w-lg transform transition-all duration-500 ${isVisible ? 'scale-100 translate-y-0' : 'scale-90 translate-y-8'}`}
       >
         
-        {/* ❌ CLOSE BUTTON (Floating Outside Top-Right) */}
-        {/* We place this outside the <a> tag so clicking it doesn't open WhatsApp */}
+        {/* ❌ CLOSE BUTTON */}
         <button 
           onClick={handleClose} 
           className="absolute -top-10 right-0 z-50 flex items-center gap-2 text-white hover:text-red-400 transition-colors group"
@@ -68,49 +120,80 @@ export default function PopupModal({ notifications }: PopupModalProps) {
           </div>
         </button>
 
-        {/* 🔗 THE CLICKABLE CONTAINER */}
+        {/* 🔗 CONTENT CARD */}
         <a 
           href={WA_LINK} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="block group relative rounded-xl overflow-hidden shadow-2xl bg-white"
+          className="block group relative rounded-xl overflow-hidden shadow-2xl bg-black select-none border border-white/10"
         >
-          {isImagePoster ? (
-            // 🎨 POSTER MODE (Image is the hero)
-            <div className="relative">
-               <img 
-                 src={popup.link} 
-                 alt="Notice" 
-                 className="w-full h-auto object-contain bg-black" 
-               />
+            <div className="relative min-h-[300px] flex items-center justify-center bg-black">
                
+               {/* 🟢 PRELOADER LOGIC: Render ALL images hidden, show only active. 
+                   This fixes the "loading delay" when switching. */}
+               {popups.map((popup, idx) => {
+                 const imageUrl = popup.fileUrl || popup.link;
+                 const isActive = idx === currentIndex;
+                 
+                 return (
+                   <div 
+                      key={popup.id || idx}
+                      className={`transition-opacity duration-500 ease-in-out absolute inset-0 flex items-center justify-center ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                      // Use "relative" for active to give container height, "absolute" for others to stack
+                      style={{ position: isActive ? 'relative' : 'absolute' }}
+                   >
+                     <img 
+                       src={imageUrl} 
+                       alt="Poster" 
+                       className="w-full h-auto max-h-[75vh] object-contain" 
+                     />
+                   </div>
+                 );
+               })}
+
                {/* "Click to know more" Overlay */}
-               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-12 pb-4 px-4 text-center">
+               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-12 pb-4 px-4 text-center z-20">
                   <div className="inline-flex items-center gap-2 text-amber-400 font-bold text-sm uppercase tracking-widest animate-pulse">
                      <ExternalLink size={14} /> Click to know more
                   </div>
                </div>
             </div>
-          ) : (
-            // 📝 TEXT MODE
-            <div>
-              <div className="bg-[#003153] p-5">
-                <h3 className="text-white font-bold text-lg text-center font-cinzel tracking-wide">
-                  Important Update
-                </h3>
-              </div>
-              <div className="p-8 text-center bg-white">
-                <p className="text-gray-700 text-lg mb-6 leading-relaxed font-medium">
-                  {popup.message}
-                </p>
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2 mt-4 group-hover:text-[#003153] transition-colors">
-                   Tap card to enquire <ExternalLink size={12} />
-                </div>
-              </div>
-            </div>
-          )}
-        </a>
 
+            {/* ⬅️ ➡️ NAVIGATION ARROWS */}
+            {popups.length > 1 && (
+              <>
+                {/* ✅ FIXED FOR MOBILE: 
+                   Removed 'opacity-0 group-hover:opacity-100'. 
+                   Now using 'opacity-70' by default so they are always visible on phones.
+                */}
+                <button
+                  onClick={handlePrev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full backdrop-blur-md transition-all hover:scale-110 hover:bg-black/80 z-30 opacity-70 hover:opacity-100"
+                  title="Previous"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                
+                <button
+                  onClick={handleNext}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full backdrop-blur-md transition-all hover:scale-110 hover:bg-black/80 z-30 opacity-70 hover:opacity-100"
+                  title="Next"
+                >
+                  <ChevronRight size={24} />
+                </button>
+
+                {/* Dots Indicator */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
+                  {popups.map((_, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${idx === currentIndex ? 'w-5 bg-amber-400' : 'w-1.5 bg-white/40'}`} 
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+        </a>
       </div>
     </div>
   );

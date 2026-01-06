@@ -9,6 +9,7 @@ import { pageVisitMiddleware } from "./middleware/pageVisit.middleware";
 import adminRoutes from "./routes/admin.routes";
 import authRoutes from "./routes/auth.routes"; 
 import publicRoutes from "./routes/public.routes";
+import path from "path";
 
 
 dotenv.config();
@@ -17,14 +18,28 @@ const app = express();
 
 // ✅ Configure CORS to allow cookies from Frontend (Port 3000)
 app.use(cors({
-  origin: [
-    "http://localhost:3000", 
-    "https://specified-channels-view-memories.trycloudflare.com", 
-    "https://movements-james-beautifully-infrared.trycloudflare.com"
-  ], 
-  credentials: true 
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ];
+
+    // Allow all Cloudflare tunnel subdomains
+    if (!origin) return callback(null, true);
+
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".trycloudflare.com")
+    ) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
 }));
 
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 
 // ✅ CRITICAL: You must enable the cookie parser
