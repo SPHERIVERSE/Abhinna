@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       {
         // When you fetch('/api/courses'), it goes to http://localhost:4000/api/courses
         source: '/api/:path*',
-        destination: 'http://localhost:4000/:path*', 
+        destination: 'http://localhost:4000/api/:path*', 
       },
       {
         // For your faculty/course images stored in the uploads folder

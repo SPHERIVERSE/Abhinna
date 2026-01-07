@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { X, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 
 // 👇 CONFIGURATION
-const WA_NUMBER = "919876543210"; 
+const WA_NUMBER = "919577828813"; 
 const WA_MESSAGE = "Hello, I saw the poster on your website and would like to know more.";
 const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MESSAGE)}`;
 

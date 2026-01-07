@@ -92,9 +92,6 @@ export default function CardCarousel({ items, autoPlay = true, variant = "portra
                <p className="text-white font-bold text-center text-lg md:text-xl tracking-wide drop-shadow-md">
                  {items[currentIndex].title || "Gallery"}
                </p>
-               <p className="text-[#D4AF37] text-xs font-bold text-center uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity delay-100">
-                 View
-               </p>
              </div>
           </div>
         </div>
