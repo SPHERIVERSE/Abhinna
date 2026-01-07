@@ -1,26 +1,27 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 1. Allow images from the Backend Tunnel
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'stick-gis-tier-reflection.trycloudflare.com', // 👈 Backend Tunnel Hostname
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '4000',
       },
     ],
   },
 
-  // 2. Proxy API & Uploads to Backend Tunnel
   async rewrites() {
     return [
       {
+        // When you fetch('/api/courses'), it goes to http://localhost:4000/api/courses
         source: '/api/:path*',
-        destination: 'https://stick-gis-tier-reflection.trycloudflare.com/:path*', // 👈 Update this!
+        destination: 'http://localhost:4000/api/:path*', 
       },
       {
+        // For your faculty/course images stored in the uploads folder
         source: '/uploads/:path*',
-        destination: 'https://stick-gis-tier-reflection.trycloudflare.com/uploads/:path*', // 👈 Update this!
+        destination: 'http://localhost:4000/uploads/:path*',
       },
     ];
   },
