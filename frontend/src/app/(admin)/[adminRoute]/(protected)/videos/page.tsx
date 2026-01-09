@@ -48,6 +48,28 @@ export default function VideoAdminPage() {
     return (match && match[1]) ? match[1] : null;
   };
 
+const handleDelete = async (id: string) => {
+  if (!confirm("Are you sure you want to delete this video? This action cannot be undone.")) return;
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/videos/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      // Optimistically remove from UI
+      setVideos((prev) => prev.filter((v) => v.id !== id));
+    } else {
+      alert(result.message || "Failed to delete video");
+    }
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("An error occurred while deleting.");
+  }
+};
+
  // Inside VideoAdminPage component
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -172,7 +194,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                  lg:group-hover:opacity-100 lg:group-hover:visible lg:group-hover:pointer-events-auto
                `}>
                   <button onClick={(e) => { e.stopPropagation(); setEditingVideo(video); }} className="p-3 bg-white rounded-xl text-blue-600 shadow-xl hover:scale-110 transition-all"><Pencil size={18} /></button>
-                  <button className="p-3 bg-white rounded-xl text-red-600 shadow-xl hover:scale-110 transition-all"><Trash2 size={18} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(video.id); }}className="p-3 bg-white rounded-xl text-red-600 shadow-xl hover:scale-110 transition-all"><Trash2 size={18} /></button>
                </div>
             </div>
 
