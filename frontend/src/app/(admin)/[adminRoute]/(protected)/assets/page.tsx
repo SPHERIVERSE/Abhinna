@@ -47,6 +47,7 @@ export default function AssetsPage() {
 
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [resetKey, setResetKey] = useState(0);
 
   const fetchAssets = async () => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/assets`, { credentials: "include" });
@@ -69,6 +70,7 @@ export default function AssetsPage() {
       });
       if (res.ok) {
         await fetchAssets();
+        setResetKey(prev => prev + 1); // Reset upload component
         setForm({ title: "", type: "GALLERY", url: "", categoryGroup: "ENTRANCE", subCategory: "", rank: "", size: 0, width: 0, height: 0 });
       }
     } catch (error) { alert("Error saving asset"); } 
@@ -153,14 +155,26 @@ export default function AssetsPage() {
                <ImageIcon size={18} className="text-[#003153]" /> New Asset
             </h2>
             
-            <ImageUpload 
-               onUploadStart={() => setIsUploading(true)}
-               onUploadComplete={(data: any) => { 
-                 setForm({...form, url: data.url, size: data.size, width: data.width, height: data.height}); 
-                 setIsUploading(false); 
-               }} 
-            />
+            <ImageUpload
+              key={resetKey}
+              onUploadStart={() => setIsUploading(true)}
+              onUploadComplete={(data: any) => {
+                const fileUrl =
+                  typeof data === "string"
+                    ? data
+                    : data.secure_url || data.fileUrl || data.url;
 
+                setForm(prev => ({
+                  ...prev,
+                  url: fileUrl,
+                  size: typeof data === "object" ? data.size ?? prev.size : prev.size,
+                  width: typeof data === "object" ? data.width ?? prev.width : prev.width,
+                  height: typeof data === "object" ? data.height ?? prev.height : prev.height,
+                }));
+
+                setIsUploading(false);
+              }}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</label>
@@ -194,7 +208,7 @@ export default function AssetsPage() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading || !form.url || isUploading} className="w-full h-12 bg-[#003153] text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg hover:bg-[#002540] transition-all flex items-center justify-center gap-2">
+              <button type="submit" disabled={loading || !form.url || isUploading} className="w-full h-12 bg-[#003153] text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg hover:bg-[#002540] cursor-pointer transition-all flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <>Save to Library <ArrowRight size={14} /></>}
               </button>
             </form>
